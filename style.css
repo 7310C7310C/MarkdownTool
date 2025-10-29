@@ -3,4 +3,58 @@ h1 { text-align: center; color: #444; }
 textarea { width: 100%; height: 50vh; margin-bottom: 15px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; padding: 10px; font-size: 16px; }
 button { margin-top: 10px; width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
 button:hover { background-color: #0056b3; }
-#mindmapContainer { height: 50vh; margin-top: 20px; border: 1px solid #ccc; border-radius: 5px; background: white; padding: 10px; }
+button:hover { background-color: #0056b3; }
+
+/* 模态框：全屏展示思维导图 */
+.modal {
+	position: fixed;
+	inset: 0; /* top:0; right:0; bottom:0; left:0 */
+	background: rgba(0,0,0,0.6);
+	display: none;
+	align-items: center;
+	justify-content: center;
+	z-index: 9999;
+}
+.modal.open {
+	display: flex;
+}
+.modal-content {
+	width: 100%;
+	height: 100%;
+	background: #fff;
+	border-radius: 0;
+	box-shadow: none;
+	position: relative;
+	overflow: auto;
+}
+.modal-close {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	background: rgba(0,0,0,0.6);
+	color: #fff;
+	border: none;
+	width: 40px;
+	height: 40px;
+	border-radius: 20px;
+	font-size: 20px;
+	line-height: 1;
+	cursor: pointer;
+}
+.modal-body {
+	padding: 18px;
+	height: 100%;
+	box-sizing: border-box;
+}
+.modal-body .markmap {
+	width: 100%;
+	height: 100%;
+	background: #fff;
+}
+
+/* 在渲染完成前隐藏原始 Markdown，避免闪烁 */
+.modal-body .markmap.loading {
+	visibility: hidden;
+}
+
+/* 保持原来页面 textarea 大小不变 */

@@ -7,11 +7,30 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Markdown 转 Word (.docx) + 思维导图预览</h1>
-    <textarea id="markdownInput" placeholder="在此输入 Markdown ..."></textarea>
-    <button onclick="convertAndDownload()">下载 Word 文档</button>
-    <button onclick="showMindMap()">思维导图预览</button>
-    <div id="mindmapContainer"></div>
+    <h1>Markdown 转 Word、思维导图</h1>
+        <textarea id="markdownInput" placeholder="在此输入 Markdown ..."># 我的标题
+- 要点一
+- 要点二
+
+## 章节 1
+## 章节 2
+- 子节点 1
+    - 子子节点 1
+    - 子子节点 2
+- 子节点 2
+</textarea>
+    <button onclick="convertAndDownload()">转换为 Word 文档</button>
+    <button onclick="showMindMap()">转换为思维导图</button>
+
+    <!-- 全屏模态框：用于展示思维导图（默认隐藏） -->
+    <div id="mindmapModal" class="modal" aria-hidden="true">
+        <div class="modal-content" role="dialog" aria-modal="true" aria-label="思维导图预览">
+            <button class="modal-close" id="mindmapClose" aria-label="关闭">×</button>
+            <div id="mindmapModalContainer" class="modal-body">
+                <pre id="modalMarkmapPre" class="markmap"></pre>
+            </div>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
