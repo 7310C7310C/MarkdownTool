@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transformers.js Multi-Model Chatbot (FIXED)</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #chat-container {
+            width: 100%;
+            max-width: 600px;
+            height: 80vh;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #controls {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        #controls label {
+            font-weight: 500;
+        }
+        #model-selector {
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            flex-grow: 1;
+        }
+        #chat-box {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .message {
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 75%;
+            line-height: 1.4;
+        }
+        .user-message {
+            background-color: #0084ff;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .bot-message {
+            background-color: #e4e6eb;
+            color: #050505;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        #input-area {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #ddd;
+        }
+        #user-input {
+            flex-grow: 1;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 20px;
+            margin-right: 10px;
+        }
+        #send-btn {
+            padding: 10px 20px;
+            border: none;
+            background-color: #0084ff;
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #send-btn:disabled {
+            background-color: #a0c4e4;
+            cursor: not-allowed;
+        }
+        #status {
+            text-align: center;
+            padding: 10px;
+            font-size: 0.9em;
+            color: #65676b;
+            background-color: #f7f7f7;
+        }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div id="controls">
+        <label for="model-selector">选择模型:</label>
+        <select id="model-selector">
+            <option value="Xenova/blenderbot-400M-distill">BlenderBot (推荐)</option>
+            <option value="Xenova/distilgpt2">DistilGPT-2 (文本生成)</option>
+        </select>
+    </div>
+    <div id="status">准备就绪.</div>
+    <div id="chat-box">
+         <div class="message bot-message">你好！选择一个模型，然后开始和我聊天吧。</div>
+    </div>
+    <div id="input-area">
+        <input type="text" id="user-input" placeholder="输入消息...">
+        <button id="send-btn">发送</button>
+    </div>
+</div>
+
+<script type="module">
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2';
+
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const modelSelector = document.getElementById('model-selector');
+    const statusDiv = document.getElementById('status');
+
+    let chatbot = null;
+    let conversationHistory = []; // 用于存储对话历史，格式为字符串数组
+
+    // 核心修改 1: 使用 'text2text-generation' 或 'text-generation' 管道
+    let currentPipeline = 'text2text-generation'; 
+
+    async function initializeChatbot() {
+        setUiLoading(true);
+        const modelName = modelSelector.value;
+        statusDiv.textContent = `正在加载模型: ${modelName}... (首次加载需要几分钟)`;
+        
+        if (chatbot) {
+            await chatbot.dispose();
+            chatbot = null;
+        }
+
+        // 根据模型类型调整使用的管道
+        if (modelName.includes('gpt2')) {
+            currentPipeline = 'text-generation';
+        } else {
+            currentPipeline = 'text2text-generation'; // 适用于 BlenderBot
+        }
+        
+        try {
+            chatbot = await pipeline(currentPipeline, modelName, {
+                quantized: true,
+                progress_callback: (progress) => {
+                    statusDiv.textContent = `正在加载: ${progress.file} (${Math.round(progress.progress)}%)`;
+                }
+            });
+            conversationHistory = [];
+            statusDiv.textContent = `模型 ${modelName} 加载完毕!`;
+        } catch (error) {
+            statusDiv.textContent = `加载模型失败: ${error.message}`;
+            console.error(error);
+        } finally {
+            setUiLoading(false);
+            userInput.focus();
+        }
+    }
+
+    // 核心修改 2: 调整 sendMessage 函数以适应 'text2text-generation'
+    async function sendMessage() {
+        const messageText = userInput.value.trim();
+        if (messageText === '' || !chatbot) return;
+
+        addMessage(messageText, 'user');
+        userInput.value = '';
+        setUiLoading(true);
+        statusDiv.textContent = 'AI 正在思考...';
+
+        // 将新的用户消息添加到历史记录中
+        conversationHistory.push(messageText);
+
+        // 拼接历史记录，准备作为模型的输入
+        // 对于 seq2seq 模型 (如 BlenderBot)，通常需要特定的格式。
+        // 使用空格分隔所有消息，让模型知道上下文。
+        const inputString = conversationHistory.join(' '); 
+
+        let response;
+        try {
+             response = await chatbot(inputString, {
+                // max_length 确保不会生成过长的回复
+                max_new_tokens: 100, 
+                // 只返回生成的文本
+                return_full_text: false 
+            });
+        } catch (e) {
+            statusDiv.textContent = '生成回复失败，请检查模型是否支持该输入。';
+            console.error(e);
+            // 失败时移除最后一条历史记录
+            conversationHistory.pop();
+            setUiLoading(false);
+            return;
+        }
+        
+        // 提取生成的文本
+        const botResponse = response[0].generated_text.trim();
+        
+        // 将 AI 回复添加到历史记录中
+        conversationHistory.push(botResponse);
+
+        addMessage(botResponse, 'bot');
+        
+        setUiLoading(false);
+        statusDiv.textContent = '准备就绪.';
+    }
+
+    // 辅助函数 (保持不变)
+    function addMessage(text, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}-message`;
+        messageDiv.textContent = text;
+        chatBox.appendChild(messageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function setUiLoading(isLoading) {
+        userInput.disabled = isLoading;
+        sendBtn.disabled = isLoading;
+        modelSelector.disabled = isLoading;
+    }
+
+    // 事件监听 (保持不变)
+    sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+    modelSelector.addEventListener('change', initializeChatbot);
+
+    // 页面加载后立即初始化默认模型
+    initializeChatbot();
+</script>
+
+</body>
+</html>
