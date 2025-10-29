@@ -52,6 +52,15 @@ button:hover { background-color: #0056b3; }
 	background: #fff;
 }
 
+/* Markdown 预览容器 */
+.modal-body .modal-preview {
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+	background: #fff;
+	color: #333;
+}
+
 /* 在渲染完成前隐藏原始 Markdown，避免闪烁 */
 .modal-body .markmap.loading {
 	visibility: hidden;

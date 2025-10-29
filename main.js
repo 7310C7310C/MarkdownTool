@@ -29,6 +29,10 @@ function showMindMap() {
 
     const modal = document.getElementById('mindmapModal');
     const pre = document.getElementById('modalMarkmapPre');
+    // 如果存在预览内容，先隐藏它，优先显示思维导图的 pre
+    const previewDiv = document.getElementById('modalPreviewDiv');
+    if (previewDiv) previewDiv.style.display = 'none';
+    if (pre) pre.style.display = '';
     // 使用 textContent 避开 HTML 注入，并先隐藏预渲染的原始 Markdown，防止闪烁
     pre.classList.add('loading');
     pre.setAttribute('aria-busy', 'true');
@@ -84,6 +88,36 @@ function showMindMap() {
     }
 }
 
+function showMarkdownPreview() {
+    const markdownText = document.getElementById('markdownInput').value;
+    if (!markdownText.trim()) return alert("请输入 Markdown 内容！");
+
+    const modal = document.getElementById('mindmapModal');
+    const container = document.getElementById('mindmapModalContainer');
+    const pre = document.getElementById('modalMarkmapPre');
+
+    // 确保原来的 pre（用于思维导图）隐藏，创建或复用预览容器
+    if (pre) pre.style.display = 'none';
+
+    let previewDiv = document.getElementById('modalPreviewDiv');
+    if (!previewDiv) {
+        previewDiv = document.createElement('div');
+        previewDiv.id = 'modalPreviewDiv';
+        previewDiv.className = 'modal-preview';
+        // 插入到 container 开头，保留 pre 以供思维导图复用
+        container.insertBefore(previewDiv, container.firstChild);
+    }
+
+    // 渲染 HTML 并显示
+    previewDiv.innerHTML = marked.parse(markdownText);
+    previewDiv.style.display = '';
+
+    // 显示模态框并阻止背景滚动
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.documentElement.style.overflow = 'hidden';
+}
+
 function closeMindMapModal() {
     const modal = document.getElementById('mindmapModal');
     const pre = document.getElementById('modalMarkmapPre');
@@ -101,6 +135,13 @@ function closeMindMapModal() {
         pre.classList.remove('loading');
         pre.setAttribute('aria-busy', 'false');
         pre.textContent = '';
+        // 恢复 pre 的显示状态（为下一次使用准备）
+        pre.style.display = '';
+    }
+    // 清理可能存在的 preview div
+    const previewDiv = document.getElementById('modalPreviewDiv');
+    if (previewDiv) {
+        try { previewDiv.innerHTML = ''; previewDiv.style.display = 'none'; } catch (e) {}
     }
 }
 
