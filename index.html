@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown to Word + Mindmap</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Markdown 转 Word (.docx) + 思维导图预览</h1>
+    <textarea id="markdownInput" placeholder="在此输入 Markdown ..."></textarea>
+    <button onclick="convertAndDownload()">下载 Word 文档</button>
+    <button onclick="showMindMap()">思维导图预览</button>
+    <div id="mindmapContainer"></div>
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-autoloader"></script>
+    <script src="main.js"></script>
+</body>
+</html>
